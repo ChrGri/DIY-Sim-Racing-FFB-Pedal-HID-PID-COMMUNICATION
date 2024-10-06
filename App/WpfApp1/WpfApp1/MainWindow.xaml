@@ -9,7 +9,7 @@
                  HorizontalAlignment="Center" VerticalAlignment="Top"
                  Margin="0,20,0,0" Text="Enter some text..." />
         
-        <Button x:Name="myButton" Content="Click Me" Width="100" Height="50" 
+        <Button x:Name="myButton" Content="Start spring effect (PID)" Width="100" Height="50" 
                 HorizontalAlignment="Center" VerticalAlignment="Center" 
                 Click="myButton_Click"/>
     </Grid>
