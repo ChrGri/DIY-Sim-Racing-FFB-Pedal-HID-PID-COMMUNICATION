@@ -5,12 +5,12 @@
     <Grid>
 
         <!-- Define a TextBox at the top of the window -->
-        <TextBox x:Name="myTextBox" Width="200" Height="30"
+        <TextBox x:Name="myTextBox" Width="197" Height="72"
                  HorizontalAlignment="Center" VerticalAlignment="Top"
                  Margin="0,20,0,0" Text="Enter some text..." />
-        
+
         <Button x:Name="myButton" Content="Start spring effect (PID)" Width="100" Height="50" 
-                HorizontalAlignment="Center" VerticalAlignment="Center" 
-                Click="myButton_Click"/>
+                HorizontalAlignment="Left" VerticalAlignment="Top" 
+                Click="myButton_Click" Margin="81,111,0,0"/>
     </Grid>
 </Window>

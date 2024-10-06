@@ -10,12 +10,13 @@ namespace WpfApp
 
         private TextBox myTextBox;  // Store a reference to the TextBox
 
+        float position_filtered_fl = 0.0f;
 
         private Joystick wheel;
         private DirectInput directInput;
 
         private bool centerPosHasBeenInitialized = false;
-        private int centerPosition = 33000; // Default center position
+        private float centerPosition = 0.0f; // Default center position
 
         // PID coefficients
         private float Kp = 0.5f;  // Proportional
@@ -68,13 +69,35 @@ namespace WpfApp
             wheel.Poll();
             var state = wheel.GetCurrentState();
 
-            int currentPosition = state.X;
+            float currentPosition = state.X;
+            currentPosition /= 65536.0f;
+            currentPosition -= 0.5f;
+            currentPosition *= 20000.0f;
+
+            float alpha = 0.9f;
+            position_filtered_fl = position_filtered_fl * alpha + currentPosition * (1.0f - alpha);
+            //currentPosition = position_filtered_fl;
+
 
             if (!centerPosHasBeenInitialized)
             {
                 centerPosition = currentPosition;
                 centerPosHasBeenInitialized = true;
             }
+
+            
+
+
+            // PID calculation
+            float error = centerPosition - position_filtered_fl;
+            integral += error;
+            float derivative = error - previousError;
+            float forceOutput = (Kp * error) + (Ki * integral) + (Kd * derivative);
+            forceOutput *= -1;
+
+            SetForceFeedback(forceOutput);
+            previousError = error;
+
 
             // Zugriff auf TextBox.Text über den Dispatcher
             //string userInput = null;
@@ -84,19 +107,10 @@ namespace WpfApp
                 //userInput = myTextBox.Text;
 
                 myTextBox.Text = currentPosition.ToString();
+                myTextBox.Text += "\n" + position_filtered_fl.ToString();
                 myTextBox.Text += "\n" + executionTimeMeasuredInMs_l.ToString();
+                myTextBox.Text += "\n" + forceOutput.ToString();
             });
-
-
-            // PID calculation
-            float error = centerPosition - currentPosition;
-            integral += error;
-            float derivative = error - previousError;
-            float forceOutput = (Kp * error) + (Ki * integral) + (Kd * derivative);
-            forceOutput *= -1;
-
-            SetForceFeedback(forceOutput);
-            previousError = error;
         }
 
         private void SetForceFeedback(float force)
@@ -122,7 +136,7 @@ namespace WpfApp
                 SamplePeriod = 0,
                 Gain = 10000, // Maximum gain
                 TriggerButton = -1,
-                TriggerRepeatInterval = int.MaxValue,
+                TriggerRepeatInterval = 0,//int.MaxValue,
                 StartDelay = 0,
                 Axes = new[] { 0 }, // Set the axes for the effect
                 Directions = new[] { 0 }, // Specify the direction of the force along the axes
