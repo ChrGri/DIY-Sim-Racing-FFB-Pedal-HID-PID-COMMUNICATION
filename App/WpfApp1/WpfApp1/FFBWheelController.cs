@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Windows.Controls;
+using System.Windows.Media.Effects;
 
 namespace WpfApp
 {
@@ -15,12 +16,16 @@ namespace WpfApp
         private Joystick wheel;
         private DirectInput directInput;
 
+        private SharpDX.DirectInput.Effect constantForceEffect; // Store the constant force effect
+        private EffectParameters effectParameters;
+        bool effectWasInitialized = false;
+
         private bool centerPosHasBeenInitialized = false;
         private float centerPosition = 0.0f; // Default center position
 
         // PID coefficients
-        private float Kp = 0.5f;  // Proportional
-        private float Ki = 0.00f; // Integral
+        private float Kp = 5.0f;  // Proportional
+        private float Ki = 0.01f; // Integral
         private float Kd = 0.0f;  // Derivative
 
         private float integral = 0;
@@ -66,7 +71,7 @@ namespace WpfApp
         {
             if (wheel == null) return;
 
-            wheel.Poll();
+            //wheel.Poll();
             var state = wheel.GetCurrentState();
 
             float currentPosition = state.X;
@@ -74,7 +79,7 @@ namespace WpfApp
             currentPosition -= 0.5f;
             currentPosition *= 20000.0f;
 
-            float alpha = 0.9f;
+            float alpha = 0.0f;
             position_filtered_fl = position_filtered_fl * alpha + currentPosition * (1.0f - alpha);
             //currentPosition = position_filtered_fl;
 
@@ -117,44 +122,88 @@ namespace WpfApp
         {
             if (wheel == null) return;
 
-            int clampedForce = (int)Math.Clamp(force, -10000, 10000);
-            var effects = wheel.GetEffects();
-            var constantForceEffectInfo = effects.FirstOrDefault(e => e.Name.Contains("Constant"));
 
-            if (constantForceEffectInfo == null)
+            
+                int clampedForce = (int)Math.Clamp(force, -10000, 10000);
+                var effects = wheel.GetEffects();
+                var constantForceEffectInfo = effects.FirstOrDefault(e => e.Name.Contains("Constant"));
+
+                if (constantForceEffectInfo == null)
+                {
+                    Console.WriteLine("Constant force effect not supported on this device.");
+                    return;
+                }
+
+                var constantForce = new ConstantForce { Magnitude = clampedForce };
+                // Create the effect parameters for the constant force effect
+                var effectParameters_lcl = new EffectParameters
+                {
+                    Flags = EffectFlags.Cartesian | EffectFlags.ObjectOffsets, // Set relevant flags
+                    Duration = int.MaxValue, // Infinite duration
+                    SamplePeriod = 0,
+                    Gain = 10000, // Maximum gain
+                    TriggerButton = -1,
+                    TriggerRepeatInterval = 0,//int.MaxValue,
+                    StartDelay = 0,
+                    Axes = new[] { 0 }, // Set the axes for the effect
+                    Directions = new[] { 0 }, // Specify the direction of the force along the axes
+                    Envelope = null,
+                    Parameters = constantForce
+                };
+
+            if (effectWasInitialized == false)
             {
-                Console.WriteLine("Constant force effect not supported on this device.");
-                return;
+                try
+                {
+
+                    
+                    var effect = new SharpDX.DirectInput.Effect(wheel, constantForceEffectInfo.Guid, effectParameters_lcl);
+                    wheel.SendForceFeedbackCommand(ForceFeedbackCommand.StopAll);
+                    wheel.SendForceFeedbackCommand(ForceFeedbackCommand.Reset);
+                    effect.Start(1);
+
+
+                    constantForceEffect = effect;
+                    effectParameters = effectParameters_lcl;
+
+
+                    //for (UInt16 loopIdx = 0; loopIdx < 100; loopIdx++)
+                    //{
+
+                    //    var constantForce_lcl = new ConstantForce { Magnitude = loopIdx };
+
+                    //    effectParameters.Parameters = constantForce_lcl;
+
+                    //    effect.SetParameters(effectParameters, EffectParameterFlags.Start); // Aktualisiere den Effekt
+
+                    //}
+
+                    effectWasInitialized = true;
+
+
+
+
+                }
+                catch (SharpDX.SharpDXException ex)
+                {
+                    Console.WriteLine($"Error creating effect: {ex.Message}");
+                }
+            }
+            else
+            {
+
+                // ChatGPT command: wie kann ich mit using SharpDX.DirectInput;  einen aktiven ffb effekt manipulieren?
+                // Effekt stoppen, bevor die Parameter geändert werden
+                var constantForce_lcl = new ConstantForce { Magnitude = clampedForce };
+                effectParameters.Parameters = constantForce_lcl;
+                //constantForceEffect.SetParameters(effectParameters, EffectParameterFlags.Start | EffectParameterFlags.TypeSpecificParameters); // Aktualisiere den Effekt
+                constantForceEffect.SetParameters(effectParameters, EffectParameterFlags.TypeSpecificParameters); // Aktualisiere den Effekt
+
+
             }
 
-            var constantForce = new ConstantForce { Magnitude = clampedForce };
-            // Create the effect parameters for the constant force effect
-            var effectParameters = new EffectParameters
-            {
-                Flags = EffectFlags.Cartesian | EffectFlags.ObjectOffsets, // Set relevant flags
-                Duration = int.MaxValue, // Infinite duration
-                SamplePeriod = 0,
-                Gain = 10000, // Maximum gain
-                TriggerButton = -1,
-                TriggerRepeatInterval = 0,//int.MaxValue,
-                StartDelay = 0,
-                Axes = new[] { 0 }, // Set the axes for the effect
-                Directions = new[] { 0 }, // Specify the direction of the force along the axes
-                Envelope = null,
-                Parameters = constantForce
-            };
 
-            try
-            {
-                var effect = new Effect(wheel, constantForceEffectInfo.Guid, effectParameters);
-                wheel.SendForceFeedbackCommand(ForceFeedbackCommand.StopAll);
-                wheel.SendForceFeedbackCommand(ForceFeedbackCommand.Reset);
-                effect.Start();
-            }
-            catch (SharpDX.SharpDXException ex)
-            {
-                Console.WriteLine($"Error creating effect: {ex.Message}");
-            }
+            
         }
 
         public void Dispose()
