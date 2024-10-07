@@ -25,8 +25,8 @@ namespace WpfApp
 
         // PID coefficients
         private float Kp = 5.0f;  // Proportional
-        private float Ki = 0.01f; // Integral
-        private float Kd = 0.0f;  // Derivative
+        private float Ki = 0.0f; // Integral
+        private float Kd = 0.05f;  // Derivative
 
         private float integral = 0;
         private float previousError = 0;

@@ -21,7 +21,7 @@ namespace WpfApp
         private async void myButton_Click(object sender, RoutedEventArgs e)
         {
             // Show a message box when the button is clicked
-            MessageBox.Show("Hello, World!");
+            MessageBox.Show("Be carefull! FFB spring effect is starting after button press");
 
             // Retrieve the handle (HWND) of the current window
             IntPtr windowHandle = new WindowInteropHelper(this).Handle;
@@ -56,7 +56,7 @@ namespace WpfApp
                 stopwatch.Restart();
 
                 controller.ApplySpringEffect(executionTimeMeasuredInMs_l);
-                System.Threading.Thread.Sleep(2); // Small delay for polling
+                //System.Threading.Thread.Sleep(2); // Small delay for polling
 
                 // Stoppe die Zeitmessung
                 stopwatch.Stop();
