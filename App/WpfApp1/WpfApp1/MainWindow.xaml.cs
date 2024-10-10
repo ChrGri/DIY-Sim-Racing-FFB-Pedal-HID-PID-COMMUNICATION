@@ -12,6 +12,26 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Xml.Schema;
+using SharpDX.DirectInput;
+
+public unsafe struct splineInfo
+{
+    public fixed double xPos[10];  // Fixed-size array of 10 elements
+    public fixed double yPos[10];   // Fixed-size array of 5 elements
+    public double xMin;
+    public double xMax;
+    public int numberOfSplinePoints;
+    public double yMin;
+    public double yMax;
+
+    public fixed double a[10];   // Fixed-size array of 5 elements
+    public fixed double b[10];   // Fixed-size array of 5 elements
+    public fixed double c[10];   // Fixed-size array of 5 elements
+    public fixed double d[10];   // Fixed-size array of 5 elements
+    public fixed double h[10];   // Fixed-size array of 5 elements
+}
+
 
 namespace WpfApp
 {
@@ -20,7 +40,7 @@ namespace WpfApp
         private FFBWheelController controller;
         private CancellationTokenSource _cancellationTokenSource;
 
-
+        private splineInfo splineInfo_st;
 
 
         private const int PointRadius = 5;
@@ -31,6 +51,10 @@ namespace WpfApp
         private bool isDragging = false;
 
 
+        private List<Ellipse> state_point;
+
+        private DirectInput directInput;
+
 
 
         public MainWindow()
@@ -38,7 +62,10 @@ namespace WpfApp
             InitializeComponent();
             CreateInitialPoints();
             DrawSpline();
-        }
+
+            directInput = new DirectInput();
+            //var devices = directInput.GetDevices(DeviceType.Driving, DeviceEnumerationFlags.AllDevices);
+    }
 
 
 
@@ -52,11 +79,17 @@ namespace WpfApp
             double vert_spacing = MyCanvas.Height / 5;
             for (int i = 0; i < initialX.Length; i++)
             {
-                var point = CreatePoint(spacing * i - PointRadius / 2, MyCanvas.Height - (vert_spacing * i - PointRadius / 2));
+                var point = CreatePoint(spacing * i - 0*PointRadius / 2, MyCanvas.Height - (vert_spacing * i - 0*PointRadius / 2));
                 point.MouseLeftButtonUp += MyCanvas_MouseUp;
                 points.Add(point);
                 MyCanvas.Children.Add(point);
             }
+
+            state_point = new List<Ellipse>();
+            var point_ = CreatePoint(0, 0);
+            MyCanvas.Children.Add(point_);
+            state_point.Add(point_);
+
         }
 
         private Ellipse CreatePoint(double x, double y)
@@ -120,6 +153,11 @@ namespace WpfApp
                 MyCanvas.Children.Add(point);
             }
 
+
+
+            
+
+
             // Gather X and Y coordinates of points
             double[] xValues = new double[points.Count];
             double[] yValues = new double[points.Count];
@@ -145,12 +183,16 @@ namespace WpfApp
         }
 
         // Method to calculate natural cubic spline points
-        private List<Point> GetNaturalSpline(double[] x, double[] y)
+        unsafe private List<Point> GetNaturalSpline(double[] x, double[] y)
         {
             List<Point> splinePoints = new List<Point>();
             int n = x.Length;
 
             if (n < 2) return splinePoints; // Need at least 2 points to draw a spline
+
+
+            
+
 
             double[] a = new double[n];
             double[] b = new double[n];
@@ -167,7 +209,24 @@ namespace WpfApp
             {
                 h[i] = x[i + 1] - x[i];
                 alpha[i] = (3 / h[i]) * (y[i + 1] - y[i]) - (3 / h[Math.Max(0, i - 1)]) * (y[i] - y[Math.Max(0, i - 1)]);
+                splineInfo_st.h[i] = h[i];
             }
+
+
+
+
+            for (int i = 0; i < n-1; i++)
+            {
+                splineInfo_st.xPos[i] = x[i];
+                splineInfo_st.yPos[i] = y[i];
+            }
+
+            splineInfo_st.xMin = x[0];
+            splineInfo_st.xMax = x[n-1];
+            splineInfo_st.numberOfSplinePoints = n;
+            splineInfo_st.yMin = y[0];
+            splineInfo_st.yMax = y[n - 1];
+
 
             // Step 2: Set up the system of equations for c
             l[0] = 1;
@@ -192,6 +251,11 @@ namespace WpfApp
                 b[j] = (y[j + 1] - y[j]) / h[j] - h[j] * (c[j + 1] + 2 * c[j]) / 3;
                 d[j] = (c[j + 1] - c[j]) / (3 * h[j]);
                 a[j] = y[j];
+
+                splineInfo_st.a[j] = a[j];
+                splineInfo_st.b[j] = b[j];
+                splineInfo_st.c[j] = c[j];
+                splineInfo_st.d[j] = d[j];
             }
 
             // Step 4: Generate points on the spline
@@ -210,6 +274,65 @@ namespace WpfApp
             }
 
             return splinePoints;
+        }
+
+
+
+        unsafe private double GetSplineValue(double x)
+        {
+            
+            double splineY = 0;
+
+            uint selectedSplineIdx = 0;
+
+            double xNormalized = Math.Abs(x * (splineInfo_st.xMax - splineInfo_st.xMin));
+
+            double sign = 1;
+            if (x < 0)
+            { sign = -1; }
+
+            
+
+            for (uint splineIdx = 0; splineIdx < splineInfo_st.numberOfSplinePoints; splineIdx++)
+            {
+                if (splineInfo_st.xPos[splineIdx] >= xNormalized)
+                {
+                    break;
+                }
+                selectedSplineIdx = splineIdx;
+            }
+
+            double xPosWidth = splineInfo_st.xPos[1] - splineInfo_st.xPos[0];
+
+            double xPosDelta = xNormalized - splineInfo_st.xPos[selectedSplineIdx];
+
+            if (xPosDelta < 0)
+            {
+                xPosDelta = 0;
+            }
+
+            if (xPosDelta > xPosWidth)
+            {
+                xPosDelta = xPosWidth;
+            }
+
+            double t = xPosDelta / xPosWidth;
+
+            double splineX = splineInfo_st.xPos[selectedSplineIdx] + t * splineInfo_st.h[selectedSplineIdx];
+
+
+            splineY = splineInfo_st.a[selectedSplineIdx] + splineInfo_st.b[selectedSplineIdx] * (splineX - splineInfo_st.xPos[selectedSplineIdx]) + splineInfo_st.c[selectedSplineIdx] * Math.Pow(splineX - splineInfo_st.xPos[selectedSplineIdx], 2) + splineInfo_st.d[selectedSplineIdx] * Math.Pow(splineX - splineInfo_st.xPos[selectedSplineIdx], 3);
+
+
+            double splineY_ = splineInfo_st.yMin - splineY;
+
+            // Clamp the value between minValue and maxValue
+            double clampedValue = Math.Clamp(splineY_, splineInfo_st.yMax, splineInfo_st.yMin);
+
+
+            
+
+            return sign * clampedValue;
         }
 
 
@@ -243,6 +366,52 @@ namespace WpfApp
             }
         }
 
+        // Event handler for when the ComboBox selection changes
+        private void myComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            // Get the selected ComboBoxItem and display it in the label
+            //var selectedItem = (System.Windows.Controls.ComboBoxItem)myComboBox.SelectedItem;
+            //selectedLabel.Content = $"You selected: {selectedItem.Content}";
+
+
+
+            //// Initialize DirectInput and find the wheel device
+            //private DirectInput directInput = new DirectInput();
+            //var devices = directInput.GetDevices(DeviceType.Driving, DeviceEnumerationFlags.AllDevices);
+
+            
+
+
+        }
+
+        // Event handler to programmatically update the ComboBox items
+        private void UpdateComboBox_Click(object sender, RoutedEventArgs e)
+        {
+            // Clear existing items
+            myComboBox.Items.Clear();
+
+            var devices = directInput.GetDevices(DeviceType.Driving, DeviceEnumerationFlags.AllDevices);
+
+            foreach (var device in devices)
+            {
+                myComboBox.Items.Add(device.InstanceName);
+            }
+
+            //// Add new items dynamically
+            //myComboBox.Items.Add("New Option 1");
+            //myComboBox.Items.Add("New Option 2");
+            //myComboBox.Items.Add("New Option 3");
+            //myComboBox.Items.Add("New Option 4");
+
+            // Optionally, set the selected item
+            //myComboBox.SelectedIndex = 0; // Select the first item by default
+
+            // Display the selected item
+            selectedLabel.Content = $"You selected: {myComboBox.SelectedItem}";
+        }
+
+
+
         private void StartPolling(CancellationToken cancellationToken)
         {
             // Erstelle eine Stoppuhr
@@ -255,7 +424,17 @@ namespace WpfApp
                 // Starte die Messung
                 stopwatch.Restart();
 
-                controller.ApplySpringEffect(executionTimeMeasuredInMs_l);
+                // get device state
+                double devicePos = controller.ReadDeviceState();
+                double targetForce = GetSplineValue(devicePos);
+
+                targetForce /= 200;// MyCanvas.Height;
+
+
+           
+
+
+                controller.ApplySpringEffect(devicePos, targetForce, executionTimeMeasuredInMs_l);
                 System.Threading.Thread.Sleep(2); // Small delay for polling
 
                 // Stoppe die Zeitmessung

@@ -5,13 +5,13 @@
     <Grid>
 
         <!-- Define a TextBox at the top of the window -->
-        <TextBox x:Name="myTextBox" Width="197" Height="72"
-                 HorizontalAlignment="Center" VerticalAlignment="Top"
-                 Margin="0,20,0,0" Text="Enter some text..." />
+        <TextBox x:Name="myTextBox" Width="196" Height="116"
+                 HorizontalAlignment="Left" VerticalAlignment="Top"
+                 Margin="359,32,0,0" Text="Enter some text..." />
 
-        <Button x:Name="myButton" Content="Start spring effect (PID)" Width="100" Height="50" 
+        <Button x:Name="myButton" Content="Start FFB" Width="100" Height="50" 
                 HorizontalAlignment="Left" VerticalAlignment="Top" 
-                Click="myButton_Click" Margin="81,111,0,0"/>
+                Click="myButton_Click" Margin="40,199,0,0"/>
 
 
 
@@ -19,7 +19,26 @@
             MouseMove="MyCanvas_MouseMove" MouseDown="MyCanvas_MouseDown" MouseLeftButtonUp="MyCanvas_MouseUp" Margin="255,149,45,35">
             <!-- The Canvas where we'll place points and spline -->
         </Canvas>
+
+
+        <!-- Label to describe the ComboBox -->
+        <Label Content="Select a FFB device:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,20,0,0"/>
         
-        
+        <!-- ComboBox (drop-down menu) -->
+        <ComboBox x:Name="myComboBox" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200" Margin="20,50,0,0" SelectionChanged="myComboBox_SelectionChanged">
+            <!-- ComboBox items -->
+            <ComboBoxItem Content="Option 1" />
+            <ComboBoxItem Content="Option 2" />
+            <ComboBoxItem Content="Option 3" />
+            <ComboBoxItem Content="Option 4" />
+        </ComboBox>
+        <!-- Label to display the selected item -->
+        <Label x:Name="selectedLabel" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,100,0,0" />
+
+        <!-- Button to update ComboBox items -->
+        <Button Content="Update ComboBox" HorizontalAlignment="Left" VerticalAlignment="Top" Width="120" Margin="20,80,0,0" Click="UpdateComboBox_Click"/>
+
+
+
     </Grid>
 </Window>

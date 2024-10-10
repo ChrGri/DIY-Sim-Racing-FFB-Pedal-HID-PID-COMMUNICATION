@@ -67,41 +67,45 @@ namespace WpfApp
             }
         }
 
-        public void ApplySpringEffect(long executionTimeMeasuredInMs_l)
+        public void ApplySpringEffect(double pos, double targetForce, long executionTimeMeasuredInMs_l)
         {
             if (wheel == null) return;
 
-            //wheel.Poll();
-            var state = wheel.GetCurrentState();
+            ////wheel.Poll();
+            //var state = wheel.GetCurrentState();
 
-            float currentPosition = state.X;
-            currentPosition /= 65536.0f;
-            currentPosition -= 0.5f;
-            currentPosition *= 20000.0f;
+            //float currentPosition = state.X;
+            //currentPosition /= 65536.0f;
+            //currentPosition -= 0.5f;
+            //currentPosition *= 20000.0f;
 
-            float alpha = 0.0f;
-            position_filtered_fl = position_filtered_fl * alpha + currentPosition * (1.0f - alpha);
-            //currentPosition = position_filtered_fl;
+            double currentPosition = (float)pos * 1000.0;
 
 
-            if (!centerPosHasBeenInitialized)
+
+            // PID calculation
+            float forceOutput = 0;
+            if (false)
             {
-                centerPosition = currentPosition;
-                centerPosHasBeenInitialized = true;
+                float error = (float)currentPosition;
+                integral += error;
+                float derivative = error - previousError;
+                forceOutput = (Kp * error) + (Ki * integral) + (Kd * derivative);
+                //forceOutput *= -1;
+                previousError = error;
             }
+            else 
+            { 
+                forceOutput = (float)targetForce * Kp * 10000; 
+            }
+
 
             
 
 
-            // PID calculation
-            float error = centerPosition - position_filtered_fl;
-            integral += error;
-            float derivative = error - previousError;
-            float forceOutput = (Kp * error) + (Ki * integral) + (Kd * derivative);
-            forceOutput *= -1;
 
             SetForceFeedback(forceOutput);
-            previousError = error;
+            
 
 
             // Zugriff auf TextBox.Text über den Dispatcher
@@ -115,8 +119,41 @@ namespace WpfApp
                 myTextBox.Text += "\n" + position_filtered_fl.ToString();
                 myTextBox.Text += "\n" + executionTimeMeasuredInMs_l.ToString();
                 myTextBox.Text += "\n" + forceOutput.ToString();
+                myTextBox.Text += "\n" + targetForce.ToString();
             });
         }
+
+
+
+        public double ReadDeviceState()
+        {
+            if (wheel == null) return 0;
+
+            //wheel.Poll();
+            var state = wheel.GetCurrentState();
+
+            float currentPosition = state.X;
+            currentPosition /= 65536.0f;
+            currentPosition -= 0.5f;
+            currentPosition *= 2.0f;
+
+            float alpha = 0.0f;
+            position_filtered_fl = position_filtered_fl * alpha + currentPosition * (1.0f - alpha);
+            //currentPosition = position_filtered_fl;
+
+
+            if (!centerPosHasBeenInitialized)
+            {
+                centerPosition = currentPosition;
+                centerPosHasBeenInitialized = true;
+            }
+
+
+
+            return position_filtered_fl;
+        }
+
+
 
         private void SetForceFeedback(float force)
         {
