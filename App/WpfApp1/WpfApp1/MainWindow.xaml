@@ -18,12 +18,24 @@
         <Canvas Name="MyCanvas" Background="gray" Width="300" Height="200" 
             MouseMove="MyCanvas_MouseMove" MouseDown="MyCanvas_MouseDown" MouseLeftButtonUp="MyCanvas_MouseUp" Margin="255,149,45,35">
             <!-- The Canvas where we'll place points and spline -->
+            <!-- Label to describe the ComboBox -->
+            <Label Content="Travel -->" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,200,0,0"/>
+            <Label Content="Force -->" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Left="-44" Canvas.Top="96" RenderTransformOrigin="0.5,0.5" >
+                <Label.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform/>
+                        <SkewTransform/>
+                        <RotateTransform Angle="-90"/>
+                        <TranslateTransform/>
+                    </TransformGroup>
+                </Label.RenderTransform>
+            </Label>
         </Canvas>
 
 
         <!-- Label to describe the ComboBox -->
         <Label Content="Select a FFB device:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,20,0,0"/>
-        
+
         <!-- ComboBox (drop-down menu) -->
         <ComboBox x:Name="myComboBox" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200" Margin="20,50,0,0" SelectionChanged="myComboBox_SelectionChanged">
             <!-- ComboBox items -->
@@ -38,7 +50,9 @@
         <!-- Button to update ComboBox items -->
         <Button Content="Update ComboBox" HorizontalAlignment="Left" VerticalAlignment="Top" Width="120" Margin="20,80,0,0" Click="UpdateComboBox_Click"/>
 
-
+        <TextBox x:Name="myTextBox2" Width="99" Height="116"
+                 HorizontalAlignment="Left" VerticalAlignment="Top"
+                 Margin="255,32,0,0" Text="Enter some text..." />
 
     </Grid>
 </Window>

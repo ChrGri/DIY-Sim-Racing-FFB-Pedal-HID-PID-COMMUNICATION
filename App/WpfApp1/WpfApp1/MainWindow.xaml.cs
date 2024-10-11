@@ -355,6 +355,12 @@ namespace WpfApp
             // Initialize the FFBWheelController with the window handle
             controller = new FFBWheelController(windowHandle, myTextBox);
 
+            myTextBox2.Text = "Position";
+            myTextBox2.Text += "\n" + "Position filtered";
+            myTextBox2.Text += "\n" + "Repition time in ms";
+            myTextBox2.Text += "\n" + "Force output";
+            myTextBox2.Text += "\n" + "Target force";
+
             // Start polling in a background thread with cancellation token
             try
             {

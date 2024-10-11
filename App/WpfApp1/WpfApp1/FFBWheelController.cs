@@ -24,7 +24,7 @@ namespace WpfApp
         private float centerPosition = 0.0f; // Default center position
 
         // PID coefficients
-        private float Kp = 5.0f;  // Proportional
+        private float Kp = 1.0f;  // Proportional
         private float Ki = 0.0f; // Integral
         private float Kd = 0.05f;  // Derivative
 
