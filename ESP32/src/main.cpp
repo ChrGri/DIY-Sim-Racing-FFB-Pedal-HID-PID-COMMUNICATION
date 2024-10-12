@@ -1,141 +1,140 @@
 #include <Arduino.h>
-#include "USB.h"
-#include "tusb.h"
+#include <Adafruit_TinyUSB.h>  // Correct TinyUSB library for ESP32
 
-// HID PID Report Descriptor for Steering Wheel
-const uint8_t hid_report_descriptor[] = {
-  // HID descriptor for steering wheel
-  0x05, 0x01,        // Usage Page (Generic Desktop)
-  0x09, 0x04,        // Usage (Joystick)
-  0xA1, 0x01,        // Collection (Application)
-  0xA1, 0x02,        // Collection (Logical)
+// HID Descriptor for a PID (Physical Interface Device) Steering Wheel
+uint8_t const hid_report_descriptor[] = {
+  0x05, 0x01,                   // Usage Page (Generic Desktop)
+  0x09, 0x04,                   // Usage (Joystick)
+  0xA1, 0x01,                   // Collection (Application)
   
-  // Axis (steering)
-  0x09, 0x30,        // Usage (X - Axis)
-  0x15, 0x00,        // Logical Minimum (0)
-  0x26, 0xFF, 0x03,  // Logical Maximum (1023)
-  0x75, 0x10,        // Report Size (16)
-  0x95, 0x01,        // Report Count (1)
-  0x81, 0x02,        // Input (Data, Variable, Absolute)
-
+  // X axis (Steering)
+  0x09, 0x30,                   // Usage (X)
+  0x15, 0x00,                   // Logical Minimum (0)
+  0x26, 0xFF, 0x7F,             // Logical Maximum (32767)
+  0x75, 0x10,                   // Report Size (16)
+  0x95, 0x01,                   // Report Count (1)
+  0x81, 0x02,                   // Input (Data, Variable, Absolute)
+  
+  // Throttle (Pedal)
+  0x09, 0x32,                   // Usage (Z)
+  0x15, 0x00,                   // Logical Minimum (0)
+  0x26, 0xFF, 0x7F,             // Logical Maximum (32767)
+  0x75, 0x10,                   // Report Size (16)
+  0x95, 0x01,                   // Report Count (1)
+  0x81, 0x02,                   // Input (Data, Variable, Absolute)
+  
+  // Brake (Pedal)
+  0x09, 0x31,                   // Usage (Y)
+  0x15, 0x00,                   // Logical Minimum (0)
+  0x26, 0xFF, 0x7F,             // Logical Maximum (32767)
+  0x75, 0x10,                   // Report Size (16)
+  0x95, 0x01,                   // Report Count (1)
+  0x81, 0x02,                   // Input (Data, Variable, Absolute)
+  
   // Buttons
-  0x09, 0x01,        // Usage (Button 1)
-  0x15, 0x00,        // Logical Minimum (0)
-  0x25, 0x01,        // Logical Maximum (1)
-  0x75, 0x01,        // Report Size (1)
-  0x95, 0x08,        // Report Count (8)
-  0x81, 0x02,        // Input (Data, Variable, Absolute)
-
-  // Force Feedback
-  0x05, 0x0F,        // Usage Page (Physical Interface)
-  0x09, 0x21,        // Usage (Set Effect Report)
-  0xA1, 0x02,        // Collection (Logical)
-  0x85, 0x01,        // Report ID (1)
-  0x09, 0x22,        // Usage (Effect Block Index)
-  0x15, 0x01,        // Logical Minimum (1)
-  0x25, 0x28,        // Logical Maximum (40)
-  0x75, 0x08,        // Report Size (8)
-  0x95, 0x01,        // Report Count (1)
-  0x91, 0x02,        // Output (Data, Variable, Absolute)
-  0xC0,              // End Collection
-  0xC0               // End Collection
+  0x05, 0x09,                   // Usage Page (Button)
+  0x19, 0x01,                   // Usage Minimum (Button 1)
+  0x29, 0x10,                   // Usage Maximum (Button 16)
+  0x15, 0x00,                   // Logical Minimum (0)
+  0x25, 0x01,                   // Logical Maximum (1)
+  0x75, 0x01,                   // Report Size (1)
+  0x95, 0x10,                   // Report Count (16)
+  0x81, 0x02,                   // Input (Data, Variable, Absolute)
+  0xC0                          // End Collection
 };
 
-// Force feedback parameters
-struct {
-  uint8_t effectBlockIndex;
-  uint16_t effectMagnitude;
-  uint16_t effectDuration;
-} force_feedback;
+// Global constant force feedback value
+int16_t constantForceValue = 0;
 
-// Steering axis and button states
-int16_t steeringPosition = 0;
-uint8_t buttonState = 0;
+// Declare the HID device object
+Adafruit_USBD_HID usb_hid;
 
-USBHID usbHID;
+// Define input pins for steering, throttle, and brake
+const int steeringPin = 36;  // Example pin
+const int throttlePin = 39;  // Example pin
+const int brakePin = 34;     // Example pin
+
+// Define button pins
+const int button1Pin = 23;   // Example button pin
+const int button2Pin = 22;   // Example button pin
 
 void setup() {
+  // Initialize serial for debugging
   Serial.begin(115200);
+  while (!Serial) delay(10);  // Wait for Serial port to open
 
+  // Initialize analog input pins
+  pinMode(steeringPin, INPUT);
+  pinMode(throttlePin, INPUT);
+  pinMode(brakePin, INPUT);
+  
+  // Initialize button pins
+  pinMode(button1Pin, INPUT_PULLUP);
+  pinMode(button2Pin, INPUT_PULLUP);
+  
   // Initialize USB HID
-  usbHID.begin(hid_report_descriptor, sizeof(hid_report_descriptor));
-
-  // Setup Force Feedback effect
-  memset(&force_feedback, 0, sizeof(force_feedback));
-
-
-
-  // Setup digital input for button
-  pinMode(2, INPUT_PULLUP); // Button on GPIO 2
+  TinyUSBDevice.begin();
+  usb_hid.setReportDescriptor(hid_report_descriptor, sizeof(hid_report_descriptor));
+  usb_hid.begin();
+  
+  Serial.println("USB HID Steering Wheel with Force Feedback ready");
 }
 
-
-
-// Sends the HID input report to the host
-void sendHIDReport() {
-  uint8_t report[3];
-
-  // Steering position (2 bytes, little-endian)
-  report[0] = steeringPosition & 0xFF;
-  report[1] = (steeringPosition >> 8) & 0xFF;
-
-  // Button state (1 byte)
-  report[2] = buttonState;
-
-  // Send report to the host
-  usbHID.sendReport(report, sizeof(report));
+// Read analog values and map them to HID ranges
+int16_t readSteering() {
+  return map(analogRead(steeringPin), 0, 4095, -32768, 32767);
 }
 
-// Polls for HID output reports from the host (force feedback)
-void pollHIDOutputReport() {
-  uint8_t report[64]; // Adjust buffer size based on output report size
+int16_t readThrottle() {
+  return map(analogRead(throttlePin), 0, 4095, 0, 32767);
+}
 
-  // Check if there's a report from the host
-  int len = usbHID.receiveReport(report, sizeof(report));
-  if (len > 0) {
-    // Process force feedback command from the host
-    processForceFeedback(report, len);
+int16_t readBrake() {
+  return map(analogRead(brakePin), 0, 4095, 0, 32767);
+}
+
+// Read buttons
+uint16_t readButtons() {
+  uint16_t buttons = 0;
+  
+  if (digitalRead(button1Pin) == LOW) buttons |= 0x01;
+  if (digitalRead(button2Pin) == LOW) buttons |= 0x02;
+  
+  return buttons;
+}
+
+// Process incoming force feedback data
+void processForceFeedback(uint8_t const *buffer, uint16_t len) {
+  if (len >= 2) {
+    constantForceValue = (int16_t)(buffer[0] | (buffer[1] << 8));
+    Serial.print("Received Constant Force Value: ");
+    Serial.println(constantForceValue);
   }
 }
 
-// Process the received force feedback report
-void processForceFeedback(const uint8_t* report, uint16_t len) {
-  // Parse the report (this is just an example, you need to adapt it based on the report structure)
-  force_feedback.effectBlockIndex = report[0]; // Effect block index
-  force_feedback.effectMagnitude = report[1] | (report[2] << 8); // Magnitude
-  force_feedback.effectDuration = report[3] | (report[4] << 8);  // Duration
-
-  // Example: Print received force feedback parameters
-  Serial.print("FFB Effect Block Index: ");
-  Serial.println(force_feedback.effectBlockIndex);
-  Serial.print("FFB Magnitude: ");
-  Serial.println(force_feedback.effectMagnitude);
-  Serial.print("FFB Duration: ");
-  Serial.println(force_feedback.effectDuration);
-
-  // Apply force feedback (e.g., adjust motor, apply constant force, etc.)
-  applyForceFeedback();
+// USB HID report handler (for receiving force feedback)
+void tud_hid_report_complete_cb(uint8_t instance, uint8_t const* report, uint8_t len) {
+  processForceFeedback(report, len);
 }
-
-// Apply the force feedback effect to the steering wheel
-void applyForceFeedback() {
-  // Placeholder for motor control logic
-  // You can control motor or actuator here based on the force feedback parameters
-  Serial.println("Applying force feedback to motor/actuator...");
-}
-
 
 void loop() {
-  // Read steering position from ADC
+  // Read analog inputs
+  int16_t steering = readSteering();
+  int16_t throttle = readThrottle();
+  int16_t brake = readBrake();
+  
+  // Read button states
+  uint16_t buttons = readButtons();
+  
+  // Send gamepad report (Note: You'll need to send appropriate reports for HID)
+  usb_hid.sendReport(0, &steering, sizeof(steering));
+  usb_hid.sendReport(0, &throttle, sizeof(throttle));
+  usb_hid.sendReport(0, &brake, sizeof(brake));
+  usb_hid.sendReport(0, &buttons, sizeof(buttons));
 
-  // Read button state (pressed or not)
-  buttonState = digitalRead(2) == LOW ? 0x01 : 0x00;
-
-  // Send HID input report to the host (steering + button states)
-  sendHIDReport();
-
-  // Poll for HID output reports (force feedback commands)
-  pollHIDOutputReport();
-
-  delay(10); // Small delay to reduce CPU usage
+  // Simulate constant force by reading the force value and logging
+  Serial.print("Applying Constant Force: ");
+  Serial.println(constantForceValue);
+  
+  delay(10); // Small delay to ensure stability
 }
