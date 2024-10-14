@@ -26,15 +26,19 @@
 
         <Canvas Name="MyCanvas" Background="gray" Width="300" Height="200" 
             MouseMove="MyCanvas_MouseMove" MouseDown="MyCanvas_MouseDown" MouseLeftButtonUp="MyCanvas_MouseUp" Margin="255,149,45,35">
+
+            <Line x:Name="myLine" X1="100" Y1="0" X2="100" Y2="200" Stroke="Black" StrokeThickness="2"/>
+
+            
             <!-- The Canvas where we'll place points and spline -->
             <!-- Label to describe the ComboBox -->
-            <Label Content="Travel -->" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,200,0,0"/>
-            <Label Content="Force -->" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Left="-44" Canvas.Top="96" RenderTransformOrigin="0.5,0.5" >
+            <Label Content="Travel -->" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Left="17" Canvas.Top="222" Height="41" Width="69"/>
+            <Label Content="Force -->" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Left="-73" Canvas.Top="103" RenderTransformOrigin="0.5,0.5" Height="36" Width="80" >
                 <Label.RenderTransform>
                     <TransformGroup>
                         <ScaleTransform/>
                         <SkewTransform/>
-                        <RotateTransform Angle="-90"/>
+                        <RotateTransform Angle="-90.72"/>
                         <TranslateTransform/>
                     </TransformGroup>
                 </Label.RenderTransform>
@@ -46,7 +50,7 @@
         <Label Content="Select a FFB device:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,20,0,0"/>
 
         <!-- ComboBox (drop-down menu) -->
-        <ComboBox x:Name="myComboBox" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200" Margin="20,50,0,0" SelectionChanged="myComboBox_SelectionChanged" ItemsSource="{Binding MyComboBoxItems}" DisplayMemberPath="Display" SelectedValuePath="Value" DropDownOpened="myComboBox_DropDownOpened">    
+        <ComboBox x:Name="myComboBox" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200" Margin="20,50,0,0" SelectionChanged="myComboBox_SelectionChanged" ItemsSource="{Binding MyComboBoxItems}" DisplayMemberPath="Display" SelectedValuePath="Value" DropDownOpened="myComboBox_DropDownOpened">
         </ComboBox>
         <!-- Label to display the selected item -->
         <Label x:Name="selectedLabel" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,100,0,0" />
@@ -69,7 +73,9 @@
                 />
 
         <!--<StackPanel Margin="20">
-            --><!-- Slider Control --><!--
+            -->
+        <!-- Slider Control -->
+        <!--
             <Slider x:Name="mySlider"
                 Minimum="0" Maximum="100" 
                 Value="50"
@@ -79,7 +85,9 @@
                 ValueChanged="Slider_ValueChanged"
                 Width="300"/>
 
-            --><!-- TextBlock to display the Slider value --><!--
+            -->
+        <!-- TextBlock to display the Slider value -->
+        <!--
             <TextBlock x:Name="sliderValueText"
                    FontSize="16" 
                    Margin="0,20,0,0" 

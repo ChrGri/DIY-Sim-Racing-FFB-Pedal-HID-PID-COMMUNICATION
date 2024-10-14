@@ -11,6 +11,7 @@ namespace WpfApp
     {
 
         private TextBox myTextBox;  // Store a reference to the TextBox
+        private Canvas myCanvas;
 
         float position_filtered_fl = 0.0f;
 
@@ -35,11 +36,11 @@ namespace WpfApp
         private readonly int targetVID = 0x0483; // Replace with actual Wheel's VID
         private readonly int targetPID = 0xA355; // Replace with actual Wheel's PID
 
-        public FFBWheelController(IntPtr formHandle, TextBox textBox, string ffbWheelDeviceGuid_str)
+        public FFBWheelController(IntPtr formHandle, TextBox textBox, string ffbWheelDeviceGuid_str, Canvas canvas)
         {
 
             myTextBox = textBox;  // Save the TextBox reference
-
+            myCanvas = canvas;
 
             // Initialize DirectInput and find the wheel device
             directInput = new DirectInput();

@@ -72,6 +72,7 @@ namespace WpfApp
             InitializeComponent();
             CreateInitialPoints();
             DrawSpline();
+            //DrawLine();
 
             directInput = new DirectInput();
             //var devices = directInput.GetDevices(DeviceType.Driving, DeviceEnumerationFlags.AllDevices);
@@ -120,6 +121,9 @@ namespace WpfApp
             var point_ = CreatePoint(0, 0);
             MyCanvas.Children.Add(point_);
             state_point.Add(point_);
+
+
+            
 
         }
 
@@ -174,6 +178,24 @@ namespace WpfApp
             selectedPoint = null;
         }
 
+        private void DrawLine()
+        {
+
+            // Create a Line object
+            Line verticalLine = new Line
+            {
+                X1 = 100, // Starting X coordinate
+                Y1 = 00,  // Starting Y coordinate
+                X2 = 100, // Ending X coordinate (same as X1 for a vertical line)
+                Y2 = 200, // Ending Y coordinate
+                Stroke = Brushes.Black,     // Line color
+                StrokeThickness = 2         // Line thickness
+            };
+
+            // Add the line to the Canvas
+            MyCanvas.Children.Add(verticalLine);
+
+        }
         private void DrawSpline()
         {
             MyCanvas.Children.Clear();
@@ -185,8 +207,10 @@ namespace WpfApp
             }
 
 
+            DrawLine();
 
-            
+
+
 
 
             // Gather X and Y coordinates of points
@@ -384,7 +408,9 @@ namespace WpfApp
             _cancellationTokenSource = new CancellationTokenSource();
 
             // Initialize the FFBWheelController with the window handle
-            controller = new FFBWheelController(windowHandle, myTextBox, ffbWheelDeviceGuid_str);
+            controller = new FFBWheelController(windowHandle, myTextBox, ffbWheelDeviceGuid_str, MyCanvas);
+
+            //var tmp = MyCanvas;
 
             myTextBox2.Text = "Position";
             myTextBox2.Text += "\n" + "Position filtered";
@@ -401,6 +427,11 @@ namespace WpfApp
             {
                 MessageBox.Show("Polling stopped.");
             }
+
+
+            
+
+
         }
 
 
@@ -423,6 +454,26 @@ namespace WpfApp
             //sliderValueText.Text = $"Current Value: {mySlider.Value:F0}";
 
             ffbUpdateInterval = (UInt16)mySlider.Value;
+        }
+
+
+        // Method to get all Line elements from a Canvas
+        private List<Line> GetAllLinesFromCanvas(Canvas canvas)
+        {
+            List<Line> lines = new List<Line>();
+
+            // Iterate over each child element in the Canvas
+            foreach (var child in canvas.Children)
+            {
+                // Check if the child is a Line
+                if (child is Line line)
+                {
+                    // Add the line to the list
+                    lines.Add(line);
+                }
+            }
+
+            return lines;
         }
 
 
@@ -470,8 +521,17 @@ namespace WpfApp
 
                 targetForce /= 200;// MyCanvas.Height;
 
+                // redraw vertical line
+                MyCanvas.Dispatcher.Invoke(() =>
+                {
+                    var lines = GetAllLinesFromCanvas(MyCanvas);
 
-           
+                    lines[0].X1 = Math.Abs(devicePos) * MyCanvas.Width;
+                    lines[0].X2 = lines[0].X1;
+                });
+
+
+
 
 
                 controller.ApplySpringEffect(devicePos, targetForce, executionTimeMeasuredInMs_l);
