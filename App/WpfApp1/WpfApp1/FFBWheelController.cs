@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Media.Effects;
+using static WpfApp.MainWindow;
 
 namespace WpfApp
 {
@@ -34,7 +35,7 @@ namespace WpfApp
         private readonly int targetVID = 0x0483; // Replace with actual Wheel's VID
         private readonly int targetPID = 0xA355; // Replace with actual Wheel's PID
 
-        public FFBWheelController(IntPtr formHandle, TextBox textBox)
+        public FFBWheelController(IntPtr formHandle, TextBox textBox, string ffbWheelDeviceGuid_str)
         {
 
             myTextBox = textBox;  // Save the TextBox reference
@@ -50,7 +51,8 @@ namespace WpfApp
                 int vid = device.ProductGuid.ToString("X").Length >= 8 ? Convert.ToInt32(device.ProductGuid.ToString().Substring(4, 4), 16) : 0;
 
                 // Check if the device matches the target VID and PID
-                if (vid == targetVID && pid == targetPID)
+                if (device.ProductGuid.ToString() == ffbWheelDeviceGuid_str)
+                //if (vid == targetVID && pid == targetPID)
                 {
                     wheel = new Joystick(directInput, device.InstanceGuid);
                     //wheel.SetCooperativeLevel(formHandle, CooperativeLevel.Foreground | CooperativeLevel.Exclusive);

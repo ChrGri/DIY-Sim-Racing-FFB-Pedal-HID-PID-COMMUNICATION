@@ -9,9 +9,18 @@
                  HorizontalAlignment="Left" VerticalAlignment="Top"
                  Margin="359,32,0,0" Text="Enter some text..." />
 
-        <Button x:Name="myButton" Content="Start FFB" Width="100" Height="50" 
+        <Button x:Name="myButton" Content="Start FFB" Width="118" Height="20" 
                 HorizontalAlignment="Left" VerticalAlignment="Top" 
-                Click="myButton_Click" Margin="40,199,0,0"/>
+                Click="myButton_Click" Margin="20,118,0,0" RenderTransformOrigin="0.5,0.5">
+            <Button.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform/>
+                    <SkewTransform/>
+                    <RotateTransform Angle="-0.0"/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </Button.RenderTransform>
+        </Button>
 
 
 
@@ -37,22 +46,55 @@
         <Label Content="Select a FFB device:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,20,0,0"/>
 
         <!-- ComboBox (drop-down menu) -->
-        <ComboBox x:Name="myComboBox" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200" Margin="20,50,0,0" SelectionChanged="myComboBox_SelectionChanged">
-            <!-- ComboBox items -->
-            <ComboBoxItem Content="Option 1" />
-            <ComboBoxItem Content="Option 2" />
-            <ComboBoxItem Content="Option 3" />
-            <ComboBoxItem Content="Option 4" />
+        <ComboBox x:Name="myComboBox" HorizontalAlignment="Left" VerticalAlignment="Top" Width="200" Margin="20,50,0,0" SelectionChanged="myComboBox_SelectionChanged" ItemsSource="{Binding MyComboBoxItems}" DisplayMemberPath="Display" SelectedValuePath="Value" DropDownOpened="myComboBox_DropDownOpened">    
         </ComboBox>
         <!-- Label to display the selected item -->
         <Label x:Name="selectedLabel" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,100,0,0" />
 
-        <!-- Button to update ComboBox items -->
-        <Button Content="Update ComboBox" HorizontalAlignment="Left" VerticalAlignment="Top" Width="120" Margin="20,80,0,0" Click="UpdateComboBox_Click"/>
-
         <TextBox x:Name="myTextBox2" Width="99" Height="116"
                  HorizontalAlignment="Left" VerticalAlignment="Top"
                  Margin="255,32,0,0" Text="Enter some text..." />
+
+
+
+        <Label Content="FFB update interval in ms:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="23,173,0,0"/>
+
+        <Slider x:Name="mySlider"
+                Minimum="0" Maximum="100" 
+                Value="5"
+                TickPlacement="BottomRight"
+                TickFrequency="1"
+                IsSnapToTickEnabled="True"
+                ValueChanged="Slider_ValueChanged" Margin="20,199,406,218"
+                />
+
+        <!--<StackPanel Margin="20">
+            --><!-- Slider Control --><!--
+            <Slider x:Name="mySlider"
+                Minimum="0" Maximum="100" 
+                Value="50"
+                TickPlacement="BottomRight"
+                TickFrequency="10"
+                IsSnapToTickEnabled="True"
+                ValueChanged="Slider_ValueChanged"
+                Width="300"/>
+
+            --><!-- TextBlock to display the Slider value --><!--
+            <TextBlock x:Name="sliderValueText"
+                   FontSize="16" 
+                   Margin="0,20,0,0" 
+                   Text="Current Value: 50"/>
+        </StackPanel>-->
+
+
+
+
+        <!--<Button x:Name="listHidDevices_button" Content="List HID devices" Width="100" Height="50" 
+            HorizontalAlignment="Left" VerticalAlignment="Top" 
+            Click="listHidDevices_button_click" Margin="40,274,0,0"/>
+        <TextBox x:Name="listHidDevices_textbox" Width="196" Height="116"
+            HorizontalAlignment="Left" VerticalAlignment="Top"
+            Margin="20,358,0,0" Text="Enter some text..." />-->
 
     </Grid>
 </Window>

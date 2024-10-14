@@ -14,6 +14,7 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Xml.Schema;
 using SharpDX.DirectInput;
+using System.Collections.ObjectModel;
 
 public unsafe struct splineInfo
 {
@@ -39,6 +40,15 @@ namespace WpfApp
     {
         private FFBWheelController controller;
         private CancellationTokenSource _cancellationTokenSource;
+        private string ffbWheelDeviceGuid_str = "";
+
+        private UInt16 ffbUpdateInterval = 0;
+
+
+        // Declare the ObservableCollection
+        public ObservableCollection<WheelChoice> MyComboBoxItems { get; set; }
+
+
 
         private splineInfo splineInfo_st;
 
@@ -65,8 +75,29 @@ namespace WpfApp
 
             directInput = new DirectInput();
             //var devices = directInput.GetDevices(DeviceType.Driving, DeviceEnumerationFlags.AllDevices);
-    }
 
+
+            MyComboBoxItems = new ObservableCollection<WheelChoice>();
+            DataContext = this;
+
+            UpdateComboBox();
+
+            
+
+        }
+
+
+        public class WheelChoice
+        {
+            public WheelChoice(string display, string value)
+            {
+                Display = display;
+                Value = value;
+            }
+
+            public string Value { get; set; }
+            public string Display { get; set; }
+        }
 
 
         private void CreateInitialPoints()
@@ -353,7 +384,7 @@ namespace WpfApp
             _cancellationTokenSource = new CancellationTokenSource();
 
             // Initialize the FFBWheelController with the window handle
-            controller = new FFBWheelController(windowHandle, myTextBox);
+            controller = new FFBWheelController(windowHandle, myTextBox, ffbWheelDeviceGuid_str);
 
             myTextBox2.Text = "Position";
             myTextBox2.Text += "\n" + "Position filtered";
@@ -372,50 +403,53 @@ namespace WpfApp
             }
         }
 
+
+
         // Event handler for when the ComboBox selection changes
         private void myComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            // Get the selected ComboBoxItem and display it in the label
-            //var selectedItem = (System.Windows.Controls.ComboBoxItem)myComboBox.SelectedItem;
-            //selectedLabel.Content = $"You selected: {selectedItem.Content}";
 
+            string tmp = (string)myComboBox.SelectedValue;
 
-
-            //// Initialize DirectInput and find the wheel device
-            //private DirectInput directInput = new DirectInput();
-            //var devices = directInput.GetDevices(DeviceType.Driving, DeviceEnumerationFlags.AllDevices);
-
-            
-
+            ffbWheelDeviceGuid_str  = tmp;
 
         }
 
-        // Event handler to programmatically update the ComboBox items
-        private void UpdateComboBox_Click(object sender, RoutedEventArgs e)
+
+        // Event handler for Slider value change
+        private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            // Clear existing items
-            myComboBox.Items.Clear();
+            // Update the TextBlock with the current value of the slider
+            //sliderValueText.Text = $"Current Value: {mySlider.Value:F0}";
+
+            ffbUpdateInterval = (UInt16)mySlider.Value;
+        }
+
+
+        // Event handler to programmatically update the ComboBox items
+
+        private void UpdateComboBox()
+        {
+
+
+            MyComboBoxItems.Clear();
 
             var devices = directInput.GetDevices(DeviceType.Driving, DeviceEnumerationFlags.AllDevices);
 
+            var wheelDeviceSelectionArray = new List<WheelChoice>();
             foreach (var device in devices)
             {
-                myComboBox.Items.Add(device.InstanceName);
+                MyComboBoxItems.Add(new WheelChoice(device.InstanceName, device.ProductGuid.ToString()));
             }
 
-            //// Add new items dynamically
-            //myComboBox.Items.Add("New Option 1");
-            //myComboBox.Items.Add("New Option 2");
-            //myComboBox.Items.Add("New Option 3");
-            //myComboBox.Items.Add("New Option 4");
-
-            // Optionally, set the selected item
-            //myComboBox.SelectedIndex = 0; // Select the first item by default
-
-            // Display the selected item
-            selectedLabel.Content = $"You selected: {myComboBox.SelectedItem}";
         }
 
+
+
+        private void myComboBox_DropDownOpened(object sender, EventArgs e)
+        {
+            UpdateComboBox();
+        }
 
 
         private void StartPolling(CancellationToken cancellationToken)
@@ -441,7 +475,7 @@ namespace WpfApp
 
 
                 controller.ApplySpringEffect(devicePos, targetForce, executionTimeMeasuredInMs_l);
-                System.Threading.Thread.Sleep(2); // Small delay for polling
+                System.Threading.Thread.Sleep(ffbUpdateInterval); // Small delay for polling
 
                 // Stoppe die Zeitmessung
                 stopwatch.Stop();
