@@ -5,9 +5,9 @@
     <Grid>
 
         <!-- Define a TextBox at the top of the window -->
-        <TextBox x:Name="myTextBox" Width="196" Height="116"
+        <TextBox x:Name="myTextBox" Width="136" Height="116"
                  HorizontalAlignment="Left" VerticalAlignment="Top"
-                 Margin="359,32,0,0" Text="Enter some text..." />
+                 Margin="437,32,0,0" Text="Enter some text..." />
 
         <Button x:Name="myButton" Content="Start FFB" Width="118" Height="20" 
                 HorizontalAlignment="Left" VerticalAlignment="Top" 
@@ -27,19 +27,15 @@
         <Canvas Name="MyCanvas" Background="gray" Width="300" Height="200" 
             MouseMove="MyCanvas_MouseMove" MouseDown="MyCanvas_MouseDown" MouseLeftButtonUp="MyCanvas_MouseUp" Margin="255,149,45,35">
 
-            <Line x:Name="myLine" X1="100" Y1="0" X2="100" Y2="200" Stroke="Black" StrokeThickness="2"/>
 
-            
+
             <!-- The Canvas where we'll place points and spline -->
             <!-- Label to describe the ComboBox -->
-            <Label Content="Travel -->" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Left="17" Canvas.Top="222" Height="41" Width="69"/>
-            <Label Content="Force -->" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Left="-73" Canvas.Top="103" RenderTransformOrigin="0.5,0.5" Height="36" Width="80" >
+            <Label Content="Travel -->" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Left="113" Canvas.Top="202" Height="41" Width="69"/>
+            <Label Content="Force -->" HorizontalAlignment="Left" VerticalAlignment="Top" Canvas.Left="-46" Canvas.Top="65" RenderTransformOrigin="0.5,0.5" Height="36" Width="80" >
                 <Label.RenderTransform>
                     <TransformGroup>
-                        <ScaleTransform/>
-                        <SkewTransform/>
-                        <RotateTransform Angle="-90.72"/>
-                        <TranslateTransform/>
+                        <RotateTransform Angle="-90"/>
                     </TransformGroup>
                 </Label.RenderTransform>
             </Label>
@@ -55,7 +51,7 @@
         <!-- Label to display the selected item -->
         <Label x:Name="selectedLabel" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,100,0,0" />
 
-        <TextBox x:Name="myTextBox2" Width="99" Height="116"
+        <TextBox x:Name="myTextBox2" Width="177" Height="116"
                  HorizontalAlignment="Left" VerticalAlignment="Top"
                  Margin="255,32,0,0" Text="Enter some text..." />
 

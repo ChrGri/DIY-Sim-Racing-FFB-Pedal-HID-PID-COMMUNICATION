@@ -44,6 +44,13 @@ namespace WpfApp
 
         private UInt16 ffbUpdateInterval = 0;
 
+        double devicePosGlobal_fl64 = 0;
+        double ffbForce_global_fl64 = 0;
+
+        long executionTimeMeasuredInMs_FFBtask_l = 0;
+
+
+
 
         // Declare the ObservableCollection
         public ObservableCollection<WheelChoice> MyComboBoxItems { get; set; }
@@ -72,7 +79,7 @@ namespace WpfApp
             InitializeComponent();
             CreateInitialPoints();
             DrawSpline();
-            //DrawLine();
+            DrawLine();
 
             directInput = new DirectInput();
             //var devices = directInput.GetDevices(DeviceType.Driving, DeviceEnumerationFlags.AllDevices);
@@ -184,10 +191,10 @@ namespace WpfApp
             // Create a Line object
             Line verticalLine = new Line
             {
-                X1 = 100, // Starting X coordinate
+                X1 = 0, // Starting X coordinate
                 Y1 = 00,  // Starting Y coordinate
-                X2 = 100, // Ending X coordinate (same as X1 for a vertical line)
-                Y2 = 200, // Ending Y coordinate
+                X2 = 0, // Ending X coordinate (same as X1 for a vertical line)
+                Y2 = MyCanvas.Height, // Ending Y coordinate
                 Stroke = Brushes.Black,     // Line color
                 StrokeThickness = 2         // Line thickness
             };
@@ -198,7 +205,27 @@ namespace WpfApp
         }
         private void DrawSpline()
         {
-            MyCanvas.Children.Clear();
+            //MyCanvas.Children.Clear();
+
+
+            // Remove all elements of a specific type, for example, all Rectangle elements
+            List<UIElement> elementsToRemove = new List<UIElement>();
+
+            foreach (UIElement child in MyCanvas.Children)
+            {
+                if ( (child is Ellipse) ||(child is Polyline))  // Replace Rectangle with the type you're targeting
+                {
+                    elementsToRemove.Add(child);  // Add to a temporary list to avoid modifying the collection while iterating
+                }
+            }
+
+            // Now remove the elements
+            foreach (UIElement element in elementsToRemove)
+            {
+                MyCanvas.Children.Remove(element);
+            }
+
+
 
             // Redraw the points
             foreach (var point in points)
@@ -207,7 +234,7 @@ namespace WpfApp
             }
 
 
-            DrawLine();
+            //DrawLine();
 
 
 
@@ -270,7 +297,7 @@ namespace WpfApp
 
 
 
-            for (int i = 0; i < n-1; i++)
+            for (int i = 0; i < n; i++)
             {
                 splineInfo_st.xPos[i] = x[i];
                 splineInfo_st.yPos[i] = y[i];
@@ -412,16 +439,17 @@ namespace WpfApp
 
             //var tmp = MyCanvas;
 
-            myTextBox2.Text = "Position";
-            myTextBox2.Text += "\n" + "Position filtered";
+            myTextBox2.Text = "Position (normalized)";
+            //myTextBox2.Text += "\n" + "Position filtered";
             myTextBox2.Text += "\n" + "Repition time in ms";
-            myTextBox2.Text += "\n" + "Force output";
-            myTextBox2.Text += "\n" + "Target force";
+            //myTextBox2.Text += "\n" + "Force output";
+            myTextBox2.Text += "\n" + "Target force (normalized)";
 
             // Start polling in a background thread with cancellation token
             try
             {
-                await Task.Run(() => StartPolling(_cancellationTokenSource.Token));
+                //await Task.Run(() => StartPollingFFB(_cancellationTokenSource.Token));
+                Task.Run(() => StartPollingFFB(_cancellationTokenSource.Token));
             }
             catch (OperationCanceledException)
             {
@@ -429,7 +457,18 @@ namespace WpfApp
             }
 
 
-            
+            // Start polling in a background thread with cancellation token
+            try
+            {
+                Task.Run(() => StartPollingGUI(_cancellationTokenSource.Token));
+            }
+            catch (OperationCanceledException)
+            {
+                MessageBox.Show("Polling stopped.");
+            }
+
+
+
 
 
         }
@@ -486,6 +525,8 @@ namespace WpfApp
             MyComboBoxItems.Clear();
 
             var devices = directInput.GetDevices(DeviceType.Driving, DeviceEnumerationFlags.AllDevices);
+            //var devices = directInput.GetDevices(DeviceType.ControlDevice, DeviceEnumerationFlags.AllDevices);
+            
 
             var wheelDeviceSelectionArray = new List<WheelChoice>();
             foreach (var device in devices)
@@ -503,11 +544,10 @@ namespace WpfApp
         }
 
 
-        private void StartPolling(CancellationToken cancellationToken)
+        private void StartPollingFFB(CancellationToken cancellationToken)
         {
             // Erstelle eine Stoppuhr
             Stopwatch stopwatch = new Stopwatch();
-            long executionTimeMeasuredInMs_l = 0;
 
             // Polling loop for force feedback updates
             while (!cancellationToken.IsCancellationRequested) // Check if cancellation is requested
@@ -518,29 +558,82 @@ namespace WpfApp
                 // get device state
                 double devicePos = controller.ReadDeviceState();
                 double targetForce = GetSplineValue(devicePos);
+                devicePosGlobal_fl64 = devicePos;
 
                 targetForce /= 200;// MyCanvas.Height;
+
+                // redraw vertical line
+                //MyCanvas.Dispatcher.Invoke(() =>
+                //{
+                //    var lines = GetAllLinesFromCanvas(MyCanvas);
+
+                //    lines[0].X1 = Math.Abs(devicePos) * MyCanvas.Width;
+                //    lines[0].X2 = lines[0].X1;
+                //});
+
+
+
+
+
+                ffbForce_global_fl64 = controller.ApplySpringEffect(devicePos, targetForce);
+                System.Threading.Thread.Sleep(ffbUpdateInterval); // Small delay for polling
+
+                // Stoppe die Zeitmessung
+                stopwatch.Stop();
+
+                executionTimeMeasuredInMs_FFBtask_l = stopwatch.ElapsedMilliseconds;
+            }
+        }
+
+
+
+        private void StartPollingGUI(CancellationToken cancellationToken)
+        {
+            // Erstelle eine Stoppuhr
+            //Stopwatch stopwatch = new Stopwatch();
+            //long executionTimeMeasuredInMs_l = 0;
+
+            // Polling loop for force feedback updates
+            while (!cancellationToken.IsCancellationRequested) // Check if cancellation is requested
+            {
+                // Starte die Messung
+                //stopwatch.Restart();
 
                 // redraw vertical line
                 MyCanvas.Dispatcher.Invoke(() =>
                 {
                     var lines = GetAllLinesFromCanvas(MyCanvas);
 
-                    lines[0].X1 = Math.Abs(devicePos) * MyCanvas.Width;
+                    lines[0].X1 = Math.Abs(devicePosGlobal_fl64) * MyCanvas.Width;
                     lines[0].X2 = lines[0].X1;
                 });
 
 
 
 
+                // Zugriff auf TextBox.Text über den Dispatcher
+                string userInput = null;
+                myTextBox.Dispatcher.Invoke(() =>
+                {
+                    // Hier wird der Zugriff auf die TextBox innerhalb des UI-Threads ausgeführt
+                    //userInput = myTextBox.Text;
 
-                controller.ApplySpringEffect(devicePos, targetForce, executionTimeMeasuredInMs_l);
-                System.Threading.Thread.Sleep(ffbUpdateInterval); // Small delay for polling
+                    myTextBox.Text = Math.Round(devicePosGlobal_fl64,3).ToString();
+                    //myTextBox.Text += "\n" + position_filtered_fl.ToString();
+                    myTextBox.Text += "\n" + executionTimeMeasuredInMs_FFBtask_l.ToString();
+                    //myTextBox.Text += "\n" + forceOutput.ToString();
+                    myTextBox.Text += "\n" + Math.Round(ffbForce_global_fl64,3).ToString();
 
+
+
+                });
+
+
+                System.Threading.Thread.Sleep(20); // Small delay for polling
                 // Stoppe die Zeitmessung
-                stopwatch.Stop();
+                //stopwatch.Stop();
 
-                executionTimeMeasuredInMs_l = stopwatch.ElapsedMilliseconds;
+                //executionTimeMeasuredInMs_FFBtask_l = stopwatch.ElapsedMilliseconds;
             }
         }
 

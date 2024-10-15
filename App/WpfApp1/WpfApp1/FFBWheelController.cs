@@ -70,9 +70,9 @@ namespace WpfApp
             }
         }
 
-        public void ApplySpringEffect(double pos, double targetForce, long executionTimeMeasuredInMs_l)
+        public double ApplySpringEffect(double pos, double targetForce)
         {
-            if (wheel == null) return;
+            if (wheel == null) return 0;
 
             ////wheel.Poll();
             //var state = wheel.GetCurrentState();
@@ -108,22 +108,24 @@ namespace WpfApp
 
 
             SetForceFeedback(forceOutput);
-            
 
 
-            // Zugriff auf TextBox.Text über den Dispatcher
-            //string userInput = null;
-            myTextBox.Dispatcher.Invoke(() =>
-            {
-                // Hier wird der Zugriff auf die TextBox innerhalb des UI-Threads ausgeführt
-                //userInput = myTextBox.Text;
 
-                myTextBox.Text = currentPosition.ToString();
-                myTextBox.Text += "\n" + position_filtered_fl.ToString();
-                myTextBox.Text += "\n" + executionTimeMeasuredInMs_l.ToString();
-                myTextBox.Text += "\n" + forceOutput.ToString();
-                myTextBox.Text += "\n" + targetForce.ToString();
-            });
+            //// Zugriff auf TextBox.Text über den Dispatcher
+            ////string userInput = null;
+            //myTextBox.Dispatcher.Invoke(() =>
+            //{
+            //    // Hier wird der Zugriff auf die TextBox innerhalb des UI-Threads ausgeführt
+            //    //userInput = myTextBox.Text;
+
+            //    myTextBox.Text = currentPosition.ToString();
+            //    myTextBox.Text += "\n" + position_filtered_fl.ToString();
+            //    myTextBox.Text += "\n" + executionTimeMeasuredInMs_l.ToString();
+            //    myTextBox.Text += "\n" + forceOutput.ToString();
+            //    myTextBox.Text += "\n" + targetForce.ToString();
+            //});
+
+            return targetForce;
         }
 
 
