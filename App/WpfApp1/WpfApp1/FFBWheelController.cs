@@ -15,6 +15,12 @@ namespace WpfApp
 
         float position_filtered_fl = 0.0f;
 
+
+        double axisMinValue_fl64 = 0;
+        double axisMaxValue_fl64 = 10000;
+        double axisSaturation_fl64 = 10000;
+
+
         private Joystick wheel;
         private DirectInput directInput;
 
@@ -59,6 +65,26 @@ namespace WpfApp
                     //wheel.SetCooperativeLevel(formHandle, CooperativeLevel.Foreground | CooperativeLevel.Exclusive);
                     wheel.SetCooperativeLevel(formHandle, CooperativeLevel.Background | CooperativeLevel.Exclusive);
                     wheel.Acquire();
+
+                    // Get axis range for each axis
+                    foreach (var deviceObject in wheel.GetObjects())
+                    {
+                        // Check if the object is an axis by comparing its type with DeviceObjectTypeFlags.Axis
+                        if ((deviceObject.ObjectId.Flags & DeviceObjectTypeFlags.Axis) != 0)
+                        {
+                            // Get object properties to retrieve axis range
+                            var axisProperties = wheel.GetObjectPropertiesById(deviceObject.ObjectId);
+
+                            if (axisProperties != null)
+                            {
+                                axisMinValue_fl64 = axisProperties.Range.Minimum;
+                                axisMaxValue_fl64 = axisProperties.Range.Maximum;
+                                axisSaturation_fl64 = axisProperties.Saturation;
+                            }
+                        }
+                    }
+
+
                     Console.WriteLine($"Found and acquired FFB wheel with VID: {vid:X} and PID: {pid:X}");
                     break;
                 }
@@ -74,22 +100,11 @@ namespace WpfApp
         {
             if (wheel == null) return 0;
 
-            ////wheel.Poll();
-            //var state = wheel.GetCurrentState();
-
-            //float currentPosition = state.X;
-            //currentPosition /= 65536.0f;
-            //currentPosition -= 0.5f;
-            //currentPosition *= 20000.0f;
-
-            double currentPosition = (float)pos * 1000.0;
-
-
-
             // PID calculation
             float forceOutput = 0;
             if (false)
             {
+                double currentPosition = (float)pos * 1000.0;
                 float error = (float)currentPosition;
                 integral += error;
                 float derivative = error - previousError;
@@ -99,31 +114,10 @@ namespace WpfApp
             }
             else 
             { 
-                forceOutput = (float)targetForce * Kp * 10000; 
+                forceOutput = (float)targetForce * Kp * (float)axisSaturation_fl64; 
             }
 
-
-            
-
-
-
             SetForceFeedback(forceOutput);
-
-
-
-            //// Zugriff auf TextBox.Text über den Dispatcher
-            ////string userInput = null;
-            //myTextBox.Dispatcher.Invoke(() =>
-            //{
-            //    // Hier wird der Zugriff auf die TextBox innerhalb des UI-Threads ausgeführt
-            //    //userInput = myTextBox.Text;
-
-            //    myTextBox.Text = currentPosition.ToString();
-            //    myTextBox.Text += "\n" + position_filtered_fl.ToString();
-            //    myTextBox.Text += "\n" + executionTimeMeasuredInMs_l.ToString();
-            //    myTextBox.Text += "\n" + forceOutput.ToString();
-            //    myTextBox.Text += "\n" + targetForce.ToString();
-            //});
 
             return targetForce;
         }
@@ -137,10 +131,23 @@ namespace WpfApp
             //wheel.Poll();
             var state = wheel.GetCurrentState();
 
+            // normalize position
             float currentPosition = state.X;
-            currentPosition /= 65536.0f;
-            currentPosition -= 0.5f;
-            currentPosition *= 2.0f;
+
+            if (axisMaxValue_fl64 != 0)
+            {
+                currentPosition -= (float)axisMinValue_fl64;
+                currentPosition /= (float)axisMaxValue_fl64;
+                currentPosition -= 0.5f;
+                currentPosition *= 2.0f;
+            }
+            else 
+            {
+                currentPosition = 0;
+            }
+            
+
+
 
             float alpha = 0.0f;
             position_filtered_fl = position_filtered_fl * alpha + currentPosition * (1.0f - alpha);

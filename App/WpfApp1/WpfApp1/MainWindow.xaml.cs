@@ -578,6 +578,9 @@ namespace WpfApp
                 ffbForce_global_fl64 = controller.ApplySpringEffect(devicePos, targetForce);
                 System.Threading.Thread.Sleep(ffbUpdateInterval); // Small delay for polling
 
+                // Instead of Thread.Sleep, use Task.Delay asynchronously to avoid blocking
+                //await Task.Delay(ffbUpdateInterval, cancellationToken);
+
                 // Stoppe die Zeitmessung
                 stopwatch.Stop();
 
@@ -587,6 +590,7 @@ namespace WpfApp
 
 
 
+        //private void StartPollingGUI(CancellationToken cancellationToken)
         private void StartPollingGUI(CancellationToken cancellationToken)
         {
             // Erstelle eine Stoppuhr
@@ -630,6 +634,7 @@ namespace WpfApp
 
 
                 System.Threading.Thread.Sleep(20); // Small delay for polling
+                //await Task.Delay(20, cancellationToken);
                 // Stoppe die Zeitmessung
                 //stopwatch.Stop();
 
